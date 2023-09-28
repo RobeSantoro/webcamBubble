@@ -1,5 +1,4 @@
 from tkinter import *
-import customtkinter
 from PIL import ImageTk, Image
 import cv2
 import numpy as np
@@ -7,6 +6,7 @@ import numpy as np
 
 class WebcamBubbleApp:
     def __init__(self):
+
         self.root = Tk()
         self.root.overrideredirect(1)
         self.root.configure(bg="white")
@@ -35,16 +35,11 @@ class WebcamBubbleApp:
         self.label.bind("<ButtonRelease-1>", self.stop_drag)
         self.label.bind("<B1-Motion>", self.on_drag)
 
-
     def update(self):
         ret, frame = self.capture.read()
         if ret:
-
             # Flip the frame horizontally
             frame = cv2.flip(frame, 1)
-
-            # Resize the frame to 300x300
-            # frame = cv2.resize(frame, (300, 300))
 
             # Create a circular mask
             mask = np.zeros((frame.shape[0], frame.shape[1]), dtype=np.uint8)
@@ -52,14 +47,25 @@ class WebcamBubbleApp:
             radius = min(frame.shape[1] // 2, frame.shape[0] // 2)
             cv2.circle(mask, center, radius, 255, -1)
 
-            # Apply the circular mask to the frame
-            frame = cv2.bitwise_and(frame, frame, mask=mask)
-
             # Convert the frame to RGB format
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-            # Convert the frame to PhotoImage and display it
-            frame_image = ImageTk.PhotoImage(Image.fromarray(frame))
+            # Convert the numpy frame into a PIL Image
+            frame_image = Image.fromarray(frame)
+
+            # Resize the frame_image to fit the application window
+            frame_image = frame_image.resize((500, 500))
+
+            # Create an alpha mask from the numpy mask array
+            alpha_mask = Image.fromarray(mask).resize((500, 500))
+
+            # Convert the frame_image into "RGBA" mode and add the alpha_mask as the alpha channel
+            frame_image = frame_image.convert("RGBA")
+            r, g, b, a = frame_image.split()
+            frame_image = Image.merge("RGBA", (r, g, b, alpha_mask))
+
+            # Convert the frame_image to PhotoImage and display it
+            frame_image = ImageTk.PhotoImage(frame_image)
             self.label.configure(image=frame_image)
             self.label.image = frame_image
 
