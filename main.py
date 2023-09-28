@@ -25,8 +25,6 @@ class WebcamBubbleApp:
         self.image = ImageTk.PhotoImage(img)
         self.label.configure(image=self.image)
 
-        self.update()
-
         # Initialize variables for dragging
         self.drag_data = {"x": 0, "y": 0, "clicked": False}
 
@@ -35,16 +33,29 @@ class WebcamBubbleApp:
         self.label.bind("<ButtonRelease-1>", self.stop_drag)
         self.label.bind("<B1-Motion>", self.on_drag)
 
+        self.update()
+
     def update(self):
         ret, frame = self.capture.read()
         if ret:
             # Flip the frame horizontally
             frame = cv2.flip(frame, 1)
 
+            # Create a square frame
+            height, width, _ = frame.shape
+            square_size = min(height, width)
+
+            # Crop the center of the frame
+            delta = abs(height - width) // 2
+            if height > width:
+                frame = frame[delta:delta + square_size, :]
+            else:
+                frame = frame[:, delta:delta + square_size]
+
             # Create a circular mask
-            mask = np.zeros((frame.shape[0], frame.shape[1]), dtype=np.uint8)
-            center = (frame.shape[1] // 2, frame.shape[0] // 2)
-            radius = min(frame.shape[1] // 2, frame.shape[0] // 2)
+            mask = np.zeros((square_size, square_size), dtype=np.uint8)
+            center = (square_size // 2, square_size // 2)
+            radius = square_size // 2
             cv2.circle(mask, center, radius, 255, -1)
 
             # Convert the frame to RGB format
