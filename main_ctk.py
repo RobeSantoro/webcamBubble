@@ -1,10 +1,8 @@
 import os
 import threading
-import pyautogui
-import time
-
 import cv2
 import numpy as np
+from tkinter import StringVar, IntVar, filedialog
 from customtkinter import (CTk, CTkButton, CTkComboBox, CTkEntry, CTkFrame,
                            CTkImage, CTkLabel, CTkToplevel,
                            set_appearance_mode, set_default_color_theme)
@@ -15,12 +13,23 @@ class SettingsWindow(CTkToplevel):
     def __init__(self, parent):
         super().__init__(parent)
 
+        # Load images
+        image_path = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), "assets")
+        folder_image = CTkImage(
+            light_image=Image.open(os.path.join(
+                image_path, "folder_dark.png")),
+            dark_image=Image.open(os.path.join(
+                image_path, "folder_light.png")),
+        )
+
         self.attributes("-topmost", 1)
         self.title("WebCam Bubble Settings")
 
-        window_width = 500
-        window_height = 300
+        window_width = 520
+        window_height = 150
         self.geometry(f"{window_width}x{window_height}")
+        self.resizable(False, False)
 
         # Center the window on the screen
         screen_width = self.winfo_screenwidth()
@@ -28,14 +37,79 @@ class SettingsWindow(CTkToplevel):
         self.wm_geometry(
             f"+{screen_width//2-window_width//2}+{screen_height//2-window_height//2}")
 
-        # Add your setting widgets here
-        CTkLabel(self, text="Settings Window").pack()
+        # Build Settings Frame
+        self.settings_frame = CTkFrame(self)
+        self.settings_frame.pack(
+            fill="both",
+            expand=True,
+            padx=10,
+            pady=10,
+            ipadx=10,
+        )
+
+        # Title Label
+        self.title_label = CTkLabel(
+            self.settings_frame,
+            text="Select OBS executable path",
+            font=("Arial", 14),
+        ).pack(
+            side="top",
+            anchor="n",
+            pady=10,
+        )
+
+        # OBS Path Label
+        self.obs_path_label = CTkLabel(
+            self.settings_frame,
+            text="OBS Path",
+        ).pack(
+            side="left",
+            anchor="w",
+            padx=10,
+        )
+
+        # OBS Path Entry
+        self.obs_path_entry = CTkEntry(
+            self.settings_frame,
+            textvariable=parent.obs64_path,
+            width=350,
+        ).pack(
+            side="left",
+            padx=10,
+        )
+
+        # OBS Path Button
+        self.obs_path_button = CTkButton(
+            self.settings_frame,
+            width=30,
+            text="",
+            image=folder_image,
+            command=lambda: self.set_path(parent),
+        ).pack(
+            side="left",
+        )
+
+    def set_path(self, parent):
+        """ Open a file dialog to select the obs executable path."""
+
+        # Get the path to the OBS executable
+        obs_path = filedialog.askopenfilename(
+            initialdir="C:/Program Files/obs-studio/bin/64bit",
+            title="Select OBS executable",
+            filetypes=(("executables", "*.exe"), ("all files", "*.*")),
+        )
+
+        # Set the path to the obs executable
+        parent.obs64_path.set(obs_path)
 
 
 class WebCamBubbleApp(CTk):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.obs64_path = StringVar(self,
+                                    value="C:/Program Files/obs-studio/bin/64bit/obs64.exe")
 
         self.title("WebCam Bubble")  # CTk title() method
         set_appearance_mode("dark")
@@ -65,7 +139,6 @@ class WebCamBubbleApp(CTk):
         # Get the screen size
         self.screen_width = self.winfo_screenwidth()
         self.screen_height = self.winfo_screenheight()
-        print(self.screen_width, self.screen_height)
 
         # Initialize variables for dragging
         self.drag_data = {"x": 0, "y": 0, "clicked": False}
@@ -117,12 +190,10 @@ class WebCamBubbleApp(CTk):
 
         self.record_button = CTkButton(
             self,
-            text="",
+            text="rec",
             width=30,
             height=30,
             bg_color="black",
-            fg_color="red",
-            hover_color="#b20000",
             command=self.record_screen)
 
         self.record_button.place(
@@ -133,6 +204,7 @@ class WebCamBubbleApp(CTk):
 
         # Initialize settings window as None
         self.settings_window = None
+        self.is_recording = False
 
     def update(self):
         ret, frame = self.capture.read()
@@ -228,7 +300,45 @@ class WebCamBubbleApp(CTk):
         self.settings_window = None
 
     def record_screen(self):
-        pass
+
+        if self.is_recording:
+            self.is_recording = False
+
+            self.record_button.configure(fg_color="#14375e")
+            self.record_button.configure(text="rec")
+
+            # Get the directory of the python script
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+
+            # Use OBS Command to stop recording
+            path = os.path.join(script_dir, "OBSCommand")
+
+            cmd = f'{path}\\OBSCommand.exe /stoprecording && taskkill /f /im obs64.exe'
+
+            print()
+            print(cmd)
+            print()
+
+            # Create a new thread to stop recording
+            thread = threading.Thread(target=os.system, args=(cmd,))
+            thread.start()
+
+        else:
+            self.is_recording = True
+
+            self.record_button.configure(
+                fg_color="#ff2100", hover_color="#b20000")
+            self.record_button.configure(text="●")
+
+            # Change the working directory to the OBS directory
+            os.chdir(os.path.dirname(self.obs64_path.get()))
+
+            # Create the OBS Command
+            cmd = f'"{self.obs64_path.get()}" --startrecording --minimize-to-tray --multi'
+
+            # Create a new thread to run OBS
+            thread = threading.Thread(target=os.system, args=(cmd,))
+            thread.start()
 
 
 if __name__ == "__main__":
