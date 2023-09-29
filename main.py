@@ -1,69 +1,210 @@
+import os
+import threading
 import cv2
 import numpy as np
-import tkinter as tk
-import customtkinter as ctk
+from tkinter import StringVar, IntVar, filedialog
+from customtkinter import (CTk, CTkButton, CTkComboBox, CTkEntry, CTkFrame,
+                           CTkImage, CTkLabel, CTkToplevel,
+                           set_appearance_mode, set_default_color_theme)
+from PIL import Image
 
-from PIL import Image, ImageTk
+
+class SettingsWindow(CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        # Load images
+        image_path = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), "assets")
+        folder_image = CTkImage(
+            light_image=Image.open(os.path.join(
+                image_path, "folder_dark.png")),
+            dark_image=Image.open(os.path.join(
+                image_path, "folder_light.png")),
+        )
+
+        self.attributes("-topmost", 1)
+        self.title("WebCam Bubble Settings")
+
+        window_width = 520
+        window_height = 150
+        self.geometry(f"{window_width}x{window_height}")
+        self.resizable(False, False)
+
+        # Center the window on the screen
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        self.wm_geometry(
+            f"+{screen_width//2-window_width//2}+{screen_height//2-window_height//2}")
+
+        # Build Settings Frame
+        self.settings_frame = CTkFrame(self)
+        self.settings_frame.pack(
+            fill="both",
+            expand=True,
+            padx=10,
+            pady=10,
+            ipadx=10,
+        )
+
+        # Title Label
+        self.title_label = CTkLabel(
+            self.settings_frame,
+            text="Select OBS executable path",
+            font=("Arial", 14),
+        ).pack(
+            side="top",
+            anchor="n",
+            pady=10,
+        )
+
+        # OBS Path Label
+        self.obs_path_label = CTkLabel(
+            self.settings_frame,
+            text="OBS Path",
+        ).pack(
+            side="left",
+            anchor="w",
+            padx=10,
+        )
+
+        # OBS Path Entry
+        self.obs_path_entry = CTkEntry(
+            self.settings_frame,
+            textvariable=parent.obs64_path,
+            width=350,
+        ).pack(
+            side="left",
+            padx=10,
+        )
+
+        # OBS Path Button
+        self.obs_path_button = CTkButton(
+            self.settings_frame,
+            width=30,
+            text="",
+            image=folder_image,
+            command=lambda: self.set_path(parent),
+        ).pack(
+            side="left",
+        )
+
+    def set_path(self, parent):
+        """ Open a file dialog to select the obs executable path."""
+
+        # Get the path to the OBS executable
+        obs_path = filedialog.askopenfilename(
+            initialdir="C:/Program Files/obs-studio/bin/64bit",
+            title="Select OBS executable",
+            filetypes=(("executables", "*.exe"), ("all files", "*.*")),
+        )
+
+        # Set the path to the obs executable
+        parent.obs64_path.set(obs_path)
 
 
-class WebcamBubbleApp:
-    def __init__(self):
+class WebCamBubbleApp(CTk):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.obs64_path = StringVar(self,
+                                    value="C:/Program Files/obs-studio/bin/64bit/obs64.exe")
+
+        self.title("WebCam Bubble")  # CTk title() method
+        set_appearance_mode("dark")
+        set_default_color_theme("dark-blue")
+
+        # Load images
+        image_path = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), "assets")
+        settings_image = CTkImage(
+            light_image=Image.open(os.path.join(image_path, "gear-grey.png")),
+            dark_image=Image.open(os.path.join(image_path, "gear-white.png")),
+        )
 
         self.size = 300
-        self.margin = 50
+        self.margin = 100
 
-        # Create the root window
-        self.root = tk.Tk()
-        self.root.overrideredirect(1)
-        self.root.configure(bg="black")
-        self.root.attributes("-topmost", 1)
-        self.root.attributes("-transparentcolor", "black")
-        self.root.geometry(
+        # Setting up the self window
+        self.overrideredirect(1)
+        self.attributes("-topmost", 1)
+
+        # Make the background transparent when black
+        self.attributes("-transparentcolor", "black")
+
+        self.geometry(
             f"{self.size}x{self.size}+{self.margin}+{self.margin}")
 
         # Get the screen size
-        self.screen_width = self.root.winfo_screenwidth()
-        self.screen_height = self.root.winfo_screenheight()
-        print(self.screen_width, self.screen_height)
+        self.screen_width = self.winfo_screenwidth()
+        self.screen_height = self.winfo_screenheight()
 
         # Initialize variables for dragging
         self.drag_data = {"x": 0, "y": 0, "clicked": False}
 
         # Load the image
         img = Image.open("bg.png")
-        img = img.resize((self.size, self.size), Image.ADAPTIVE)
-        self.image = ImageTk.PhotoImage(img)
+        # img = img.resize((self.size, self.size), Image.ADAPTIVE)
+        self.image = CTkImage(img)
 
         # Bind mouse events for window dragging
-        self.label = tk.Label(self.root,
-                           height=self.size+self.margin,
-                           width=self.size+self.margin,
-                           bg="black",
-                           border=0
-                           )
-        self.label.configure(image=self.image)
+        self.label = CTkLabel(self,
+                              height=self.size+self.margin,
+                              width=self.size+self.margin,
+                              bg_color="black",  # Set the background color to black to make it transparent
+                              text="",
+                              )
         self.label.pack()
-
-        # Add a button that opens a new window
-        self.open_button = tk.Button(
-            self.root, text="Open", command=self.open_settings_window)
-
-        # Place the button along the circumference of the circle
-        self.open_button.place(
-            relx=0.85,
-            rely=0.85,
-            anchor="center",
-            width=50,
-            height=50)
 
         # Bind mouse events for window dragging
         self.label.bind("<ButtonPress-1>", self.start_drag)
         self.label.bind("<ButtonRelease-1>", self.stop_drag)
         self.label.bind("<B1-Motion>", self.on_drag)
 
+        # Place the webcambubble on the bottom right corner of the screen
+        self.wm_geometry(
+            f"{self.size+self.margin}x{self.size+self.margin}+{self.screen_width-self.size-self.margin}+{self.screen_height-self.size-self.margin}")
+
         # Create a capture object
         self.capture = cv2.VideoCapture(0)
         self.update()
+
+        # Add a button that open the settings window
+        self.open_settings_button = CTkButton(
+            self,
+            image=settings_image,
+            text="",
+            width=30,
+            height=30,
+            # corner_radius=15,
+            bg_color="black",
+            command=self.open_settings_window)
+
+        # Place the button along the circumference of the circle
+        self.open_settings_button.place(
+            relx=0.75,
+            rely=0.85,
+            anchor="se",
+        )
+
+        self.record_button = CTkButton(
+            self,
+            text="rec",
+            width=30,
+            height=30,
+            bg_color="black",
+            command=self.record_screen)
+
+        self.record_button.place(
+            anchor="sw",
+            relx=0.25,
+            rely=0.85,
+        )
+
+        # Initialize settings window as None
+        self.settings_window = None
+        self.is_recording = False
 
     def update(self):
         ret, frame = self.capture.read()
@@ -106,25 +247,17 @@ class WebcamBubbleApp:
             r, g, b, a = frame_image.split()
             frame_image = Image.merge("RGBA", (r, g, b, alpha_mask))
 
-            # Convert the frame_image to PhotoImage and display it
-            frame_image = ImageTk.PhotoImage(frame_image)
-            self.label.configure(image=frame_image)
-            self.label.image = frame_image
+            # Convert the frame_image to CTkImage and display it
+            converted_frame_image = CTkImage(
+                frame_image, size=(self.size, self.size))
 
-        self.root.after(30, self.update)
+            # Update the image in the label
+            self.label.configure(image=converted_frame_image,
+                                 height=self.size+self.margin,
+                                 width=self.size+self.margin,
+                                 )
 
-    def open_settings_window(self):
-
-        size = 300
-
-        # Create the settings window
-        settings_window = tk.Toplevel(self.root)
-        settings_window.attributes("-topmost", 1)
-        settings_window.title("Settings")
-        settings_window.geometry(f"{size}x{size}")
-
-        # Center the window on the screen 
-        settings_window.wm_geometry(f"+{self.screen_width//2-size//2}+{self.screen_height//2-size//2}")
+        self.after(30, self.update)
 
     def start_drag(self, event):
         self.drag_data["x"] = event.x
@@ -141,14 +274,73 @@ class WebcamBubbleApp:
             deltay = y - self.drag_data["y"]
 
             # Move the window to the new position
-            x_pos = self.root.winfo_x() + deltax
-            y_pos = self.root.winfo_y() + deltay
-            self.root.wm_geometry(f"350x350+{x_pos}+{y_pos}")
+            x_pos = self.winfo_x() + deltax
+            y_pos = self.winfo_y() + deltay
+            self.wm_geometry(
+                f"{self.size+self.margin}x{self.size+self.margin}+{x_pos}+{y_pos}")
 
-    def run(self):
-        self.root.mainloop()
+    def open_settings_window(self):
+        # Check if settings window already exists
+        if self.settings_window is not None:
+            # If the window is already open, just bring it into focus
+            self.settings_window.focus_set()
+        else:
+            # If not, create a new settings window and store a reference to it
+            self.settings_window = SettingsWindow(self)
+            # Make sure to clear the reference when the settings window is closed
+            self.settings_window.protocol(
+                "WM_DELETE_WINDOW", self.on_settings_window_close)
+
+    def on_settings_window_close(self):
+        # Your settings window close logic here...
+        # For instance, you may want to save settings when the window is closed
+
+        # Clear the reference to the settings window
+        self.settings_window.destroy()
+        self.settings_window = None
+
+    def record_screen(self):
+
+        if self.is_recording:
+            self.is_recording = False
+
+            self.record_button.configure(fg_color="#14375e")
+            self.record_button.configure(text="rec")
+
+            # Get the directory of the python script
+            script_dir = os.path.dirname(os.path.realpath(__file__))
+
+            # Use OBS Command to stop recording
+            path = os.path.join(script_dir, "OBSCommand")
+
+            cmd = f'{path}\\OBSCommand.exe /stoprecording && taskkill /f /im obs64.exe'
+
+            print()
+            print(cmd)
+            print()
+
+            # Create a new thread to stop recording
+            thread = threading.Thread(target=os.system, args=(cmd,))
+            thread.start()
+
+        else:
+            self.is_recording = True
+
+            self.record_button.configure(
+                fg_color="#ff2100", hover_color="#b20000")
+            self.record_button.configure(text="●")
+
+            # Change the working directory to the OBS directory
+            os.chdir(os.path.dirname(self.obs64_path.get()))
+
+            # Create the OBS Command
+            cmd = f'"{self.obs64_path.get()}" --startrecording --minimize-to-tray --multi'
+
+            # Create a new thread to run OBS
+            thread = threading.Thread(target=os.system, args=(cmd,))
+            thread.start()
 
 
 if __name__ == "__main__":
-    app = WebcamBubbleApp()
-    app.run()
+    app = WebCamBubbleApp()
+    app.mainloop()
