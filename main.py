@@ -145,7 +145,7 @@ class WebCamBubbleApp(CTk):
         self.drag_data = {"x": 0, "y": 0, "clicked": False}
 
         # Load the image
-        img = Image.open("bg.png")
+        img = Image.open(os.path.join(image_path, "bg.png"))
         # img = img.resize((self.size, self.size), Image.ADAPTIVE)
         self.image = CTkImage(img)
 
@@ -191,7 +191,7 @@ class WebCamBubbleApp(CTk):
 
         self.record_button = CTkButton(
             self,
-            text="rec",
+            text="REC",
             width=30,
             height=30,
             bg_color="black",
@@ -306,7 +306,7 @@ class WebCamBubbleApp(CTk):
             self.is_recording = False
 
             self.record_button.configure(fg_color="#14375e")
-            self.record_button.configure(text="rec")
+            self.record_button.configure(text="REC")
 
             # Get the directory of the python script
             script_dir = os.path.dirname(os.path.realpath(__file__))
