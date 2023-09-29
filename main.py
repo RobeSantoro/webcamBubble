@@ -1,8 +1,9 @@
 import os
 import threading
+from tkinter import IntVar, StringVar, filedialog
+
 import cv2
 import numpy as np
-from tkinter import StringVar, IntVar, filedialog
 from customtkinter import (CTk, CTkButton, CTkComboBox, CTkEntry, CTkFrame,
                            CTkImage, CTkLabel, CTkToplevel,
                            set_appearance_mode, set_default_color_theme)
