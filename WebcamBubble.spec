@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('./OBSCommand/**', 'OBSCommand/'), ('.\\webcam_env\\Lib\\site-packages/customtkinter', 'customtkinter/'), ('./assets/*', 'assets/')],
+    datas=[('./OBSCommand/**/*', 'OBSCommand/'), ('.\\webcam_env\\Lib\\site-packages/customtkinter', 'customtkinter/'), ('./assets/*', 'assets/')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

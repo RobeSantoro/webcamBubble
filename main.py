@@ -6,7 +6,9 @@ import cv2
 import numpy as np
 from customtkinter import (CTk, CTkButton, CTkComboBox, CTkEntry, CTkFrame,
                            CTkImage, CTkLabel, CTkToplevel,
-                           set_appearance_mode, set_default_color_theme)
+                           deactivate_automatic_dpi_awareness,
+                           set_appearance_mode, set_default_color_theme,
+                           set_widget_scaling, set_window_scaling)
 from PIL import Image
 
 
@@ -49,7 +51,7 @@ class SettingsWindow(CTkToplevel):
         )
 
         # Title Label
-        self.title_label = CTkLabel(
+        CTkLabel(
             self.settings_frame,
             text="Select OBS executable path",
             font=("Arial", 14),
@@ -60,7 +62,7 @@ class SettingsWindow(CTkToplevel):
         )
 
         # OBS Path Label
-        self.obs_path_label = CTkLabel(
+        CTkLabel(
             self.settings_frame,
             text="OBS Path",
         ).pack(
@@ -70,17 +72,18 @@ class SettingsWindow(CTkToplevel):
         )
 
         # OBS Path Entry
-        self.obs_path_entry = CTkEntry(
+        CTkEntry(
             self.settings_frame,
             textvariable=parent.obs64_path,
             width=350,
         ).pack(
             side="left",
+            anchor="w",
             padx=10,
         )
 
         # OBS Path Button
-        self.obs_path_button = CTkButton(
+        CTkButton(
             self.settings_frame,
             width=30,
             text="",
@@ -101,7 +104,8 @@ class SettingsWindow(CTkToplevel):
         )
 
         # Set the path to the obs executable
-        parent.obs64_path.set(obs_path)
+        if obs_path is not None and obs_path != "":
+            parent.obs64_path.set(obs_path)
 
 
 class WebCamBubbleApp(CTk):
@@ -109,12 +113,30 @@ class WebCamBubbleApp(CTk):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.obs64_path = StringVar(self,
-                                    value="C:/Program Files/obs-studio/bin/64bit/obs64.exe")
-
         self.title("WebCam Bubble")  # CTk title() method
         set_appearance_mode("dark")
         set_default_color_theme("dark-blue")
+
+        self.size = IntVar(self, value=300)
+        self.margin = IntVar(self, value=100)
+        self.scale = IntVar(self, value=2)
+
+        deactivate_automatic_dpi_awareness()
+        set_widget_scaling(self.scale.get())
+        set_window_scaling(self.scale.get())
+
+        # Setting up the self window
+        self.overrideredirect(1)
+        self.attributes("-topmost", 1)
+
+        # Set the transparent color to black
+        self.attributes("-transparentcolor", "black")
+
+        self.geometry(
+            f"{self.size.get()+self.margin.get()}x{self.size.get()+self.margin.get()}")
+
+        self.obs64_path = StringVar(self,
+                                    value="C:/Program Files/obs-studio/bin/64bit/obs64.exe")
 
         # Load images
         image_path = os.path.join(os.path.dirname(
@@ -124,79 +146,61 @@ class WebCamBubbleApp(CTk):
             dark_image=Image.open(os.path.join(image_path, "gear-white.png")),
         )
 
-        self.size = 300
-        self.margin = 100
-
-        # Setting up the self window
-        self.overrideredirect(1)
-        self.attributes("-topmost", 1)
-
-        # Make the background transparent when black
-        self.attributes("-transparentcolor", "black")
-
-        self.geometry(
-            f"{self.size}x{self.size}+{self.margin}+{self.margin}")
-
-        # Get the screen size
-        self.screen_width = self.winfo_screenwidth()
-        self.screen_height = self.winfo_screenheight()
-
-        # Initialize variables for dragging
-        self.drag_data = {"x": 0, "y": 0, "clicked": False}
-
         # Load the image
         img = Image.open(os.path.join(image_path, "bg.png"))
-        # img = img.resize((self.size, self.size), Image.ADAPTIVE)
+        # img = img.resize((self.size.get(), self.size.get()), Image.ADAPTIVE)
         self.image = CTkImage(img)
 
         # Bind mouse events for window dragging
         self.label = CTkLabel(self,
-                              height=self.size+self.margin,
-                              width=self.size+self.margin,
+                              height=self.size.get() + self.margin.get(),
+                              width=self.size.get() + self.margin.get(),
                               bg_color="black",  # Set the background color to black to make it transparent
                               text="",
                               )
         self.label.pack()
 
-        # Bind mouse events for window dragging
-        self.label.bind("<ButtonPress-1>", self.start_drag)
-        self.label.bind("<ButtonRelease-1>", self.stop_drag)
-        self.label.bind("<B1-Motion>", self.on_drag)
+        # Get the screen width and height
+        self.screen_width = self.winfo_screenwidth()
+        self.screen_height = self.winfo_screenheight()
 
-        # Place the webcambubble on the bottom right corner of the screen
-        self.wm_geometry(
-            f"{self.size+self.margin}x{self.size+self.margin}+{self.screen_width-self.size-self.margin}+{self.screen_height-self.size-self.margin}")
+        # Calcluate the position of the window on the bottom right corner of the screen
+        self.x = self.screen_width * self.scale.get() - (
+            (self.size.get() + self.margin.get()) * self.scale.get()
+        )
 
-        # Create a capture object
-        self.capture = cv2.VideoCapture(0)
-        self.update()
+        self.y = self.screen_height * self.scale.get() - (
+            (self.size.get() + self.margin.get()) * self.scale.get()
+        )
+
+        # Place the window on the bottom right corner of the screen
+        self.wm_geometry(f"+{self.x}+{self.y}")
 
         # Add a button that open the settings window
         self.open_settings_button = CTkButton(
             self,
             image=settings_image,
             text="",
-            width=30,
-            height=30,
-            # corner_radius=15,
+            width=40,
+            height=40,
             bg_color="black",
-            command=self.open_settings_window)
-
-        # Place the button along the circumference of the circle
+            command=self.open_settings_window
+        )
         self.open_settings_button.place(
+            anchor="se",
             relx=0.75,
             rely=0.85,
-            anchor="se",
         )
 
+        # Add a button that starts/stops recording
         self.record_button = CTkButton(
             self,
             text="REC",
-            width=30,
-            height=30,
+            width=40,
+            height=40,
             bg_color="black",
-            command=self.record_screen)
-
+            command=self.record_screen
+        )
         self.record_button.place(
             anchor="sw",
             relx=0.25,
@@ -206,6 +210,32 @@ class WebCamBubbleApp(CTk):
         # Initialize settings window as None
         self.settings_window = None
         self.is_recording = False
+
+        # Create a capture object
+        self.capture = cv2.VideoCapture(0)
+        self.update()
+
+        # Initialize variables for dragging
+        self.drag_data = {"x": 0, "y": 0, "clicked": False}
+
+        # Bind mouse events for window dragging
+        self.label.bind("<ButtonPress-1>", self.start_drag)
+        self.label.bind("<ButtonRelease-1>", self.stop_drag)
+        self.label.bind("<B1-Motion>", self.on_drag)
+
+    def start_drag(self, event):
+        self.drag_data["x"] = event.x
+        self.drag_data["y"] = event.y
+        self.drag_data["clicked"] = True
+
+    def stop_drag(self, event):
+        self.drag_data["clicked"] = False
+
+    def on_drag(self, event):
+        if self.drag_data["clicked"]:
+            x = self.winfo_pointerx() - self.drag_data["x"]
+            y = self.winfo_pointery() - self.drag_data["y"]
+            self.geometry(f"+{x}+{y}")
 
     def update(self):
         ret, frame = self.capture.read()
@@ -238,10 +268,12 @@ class WebCamBubbleApp(CTk):
             frame_image = Image.fromarray(frame)
 
             # Resize the frame_image to fit the application window
-            frame_image = frame_image.resize((self.size, self.size))
+            frame_image = frame_image.resize(
+                (self.size.get(), self.size.get()))
 
             # Create an alpha mask from the numpy mask array
-            alpha_mask = Image.fromarray(mask).resize((self.size, self.size))
+            alpha_mask = Image.fromarray(mask).resize(
+                (self.size.get(), self.size.get()))
 
             # Convert the frame_image into "RGBA" mode and add the alpha_mask as the alpha channel
             frame_image = frame_image.convert("RGBA")
@@ -250,35 +282,15 @@ class WebCamBubbleApp(CTk):
 
             # Convert the frame_image to CTkImage and display it
             converted_frame_image = CTkImage(
-                frame_image, size=(self.size, self.size))
+                frame_image, size=(self.size.get(), self.size.get()))
 
             # Update the image in the label
             self.label.configure(image=converted_frame_image,
-                                 height=self.size+self.margin,
-                                 width=self.size+self.margin,
+                                 height=self.size.get()+self.margin.get(),
+                                 width=self.size.get()+self.margin.get(),
                                  )
 
         self.after(30, self.update)
-
-    def start_drag(self, event):
-        self.drag_data["x"] = event.x
-        self.drag_data["y"] = event.y
-        self.drag_data["clicked"] = True
-
-    def stop_drag(self, event):
-        self.drag_data["clicked"] = False
-
-    def on_drag(self, event):
-        if self.drag_data["clicked"]:
-            x, y = event.x, event.y
-            deltax = x - self.drag_data["x"]
-            deltay = y - self.drag_data["y"]
-
-            # Move the window to the new position
-            x_pos = self.winfo_x() + deltax
-            y_pos = self.winfo_y() + deltay
-            self.wm_geometry(
-                f"{self.size+self.margin}x{self.size+self.margin}+{x_pos}+{y_pos}")
 
     def open_settings_window(self):
         # Check if settings window already exists
@@ -304,6 +316,7 @@ class WebCamBubbleApp(CTk):
 
         if self.is_recording:
             self.is_recording = False
+            print("Stop recording")
 
             self.record_button.configure(fg_color="#14375e")
             self.record_button.configure(text="REC")
@@ -326,9 +339,11 @@ class WebCamBubbleApp(CTk):
 
         else:
             self.is_recording = True
+            print("Start recording")
 
             self.record_button.configure(
-                fg_color="#ff2100", hover_color="#b20000")
+                fg_color="#ff2100",
+                hover_color="#b20000")
             self.record_button.configure(text="●")
 
             # Change the working directory to the OBS directory
