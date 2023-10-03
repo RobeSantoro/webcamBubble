@@ -1,7 +1,7 @@
 import os
 import threading
-from tkinter import IntVar, StringVar, filedialog
-
+import tkinter
+import ctypes
 import cv2
 import numpy as np
 from customtkinter import (CTk, CTkButton, CTkComboBox, CTkEntry, CTkFrame,
@@ -97,7 +97,7 @@ class SettingsWindow(CTkToplevel):
         """ Open a file dialog to select the obs executable path."""
 
         # Get the path to the OBS executable
-        obs_path = filedialog.askopenfilename(
+        obs_path = tkinter.filedialog.askopenfilename(
             initialdir="C:/Program Files/obs-studio/bin/64bit",
             title="Select OBS executable",
             filetypes=(("executables", "*.exe"), ("all files", "*.*")),
@@ -117,11 +117,23 @@ class WebCamBubbleApp(CTk):
         set_appearance_mode("dark")
         set_default_color_theme("dark-blue")
 
-        self.size = IntVar(self, value=300)
-        self.margin = IntVar(self, value=100)
-        self.scale = IntVar(self, value=2)
+        self.size = tkinter.IntVar(self, value=300)
+        self.margin = tkinter.IntVar(self, value=100)
 
         deactivate_automatic_dpi_awareness()
+
+        # Scale the ui and widgets based on the os dpi scaling
+        # Set process DPI awareness
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        # Create a tkinter window
+        root = tkinter.Tk()
+        # Get the reported DPI from the window's HWND
+        dpi = ctypes.windll.user32.GetDpiForWindow(root.winfo_id())
+        # Destroy the window
+        root.destroy()
+
+        self.scale = tkinter.IntVar(self, value=dpi/96)
+
         set_widget_scaling(self.scale.get())
         set_window_scaling(self.scale.get())
 
@@ -135,7 +147,7 @@ class WebCamBubbleApp(CTk):
         self.geometry(
             f"{self.size.get()+self.margin.get()}x{self.size.get()+self.margin.get()}")
 
-        self.obs64_path = StringVar(self,
+        self.obs64_path = tkinter.StringVar(self,
                                     value="C:/Program Files/obs-studio/bin/64bit/obs64.exe")
 
         # Load images
