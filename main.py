@@ -1,7 +1,8 @@
+import ctypes
 import os
 import threading
 import tkinter
-import ctypes
+
 import cv2
 import numpy as np
 from customtkinter import (CTk, CTkButton, CTkComboBox, CTkEntry, CTkFrame,
@@ -35,10 +36,11 @@ class SettingsWindow(CTkToplevel):
         self.resizable(False, False)
 
         # Center the window on the screen
-        screen_width = self.winfo_screenwidth()
-        screen_height = self.winfo_screenheight()
+        screen_width = self.winfo_screenwidth() * parent.scale.get()
+        screen_height = self.winfo_screenheight() * parent.scale.get()
+
         self.wm_geometry(
-            f"+{screen_width//2-window_width//2}+{screen_height//2-window_height//2}")
+            f"+{screen_width//2-window_width}+{screen_height//2-window_height}")
 
         # Build Settings Frame
         self.settings_frame = CTkFrame(self)
@@ -122,7 +124,6 @@ class WebCamBubbleApp(CTk):
 
         deactivate_automatic_dpi_awareness()
 
-        # Scale the ui and widgets based on the os dpi scaling
         # Set process DPI awareness
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
         # Create a tkinter window
