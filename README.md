@@ -30,5 +30,5 @@ Using the application involves running the script. Upon execution, you will see:
 ## Build with Pyinstaller
 
 ```bash
-pyinstaller --clean --noconfirm --onefile --windowed --add-data "./OBSCommand;OBSCommand/" --add-data ".\webcam_env\Lib\site-packages/customtkinter;customtkinter/" --add-data "./assets/*;assets/" --name WebcamBubble main.py
+pyinstaller --clean --noconfirm --onefile --windowed --add-data ".\OBSCommand;OBSCommand/" --add-data ".\webcam_env\Lib\site-packages\customtkinter;customtkinter/" --add-data ".\assets\*;assets/" --name WebcamBubble main.py
 ```
