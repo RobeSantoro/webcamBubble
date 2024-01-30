@@ -1,3 +1,4 @@
+import os
 import cv2
 import numpy as np
 import tkinter as tk
@@ -17,7 +18,12 @@ class WebcamBubbleApp:
         self.root.overrideredirect(1)
         self.root.configure(bg="black")
         self.root.attributes("-topmost", 1)
-        self.root.attributes("-transparentcolor", "black")
+
+        if os.name == "nt":
+            self.root.attributes("-transparentcolor", "black")
+        elif os.name == "posix":
+            self.root.wm_attributes("-transparent", True)
+
         self.root.geometry(
             f"{self.size}x{self.size}+{self.margin}+{self.margin}")
 
@@ -29,8 +35,13 @@ class WebcamBubbleApp:
         # Initialize variables for dragging
         self.drag_data = {"x": 0, "y": 0, "clicked": False}
 
+        # Load images
+        image_path = os.path.join(os.path.dirname(
+            os.path.realpath(__file__)), "assets")
+
         # Load the image
-        img = Image.open("bg.png")
+        img = Image.open(os.path.join(image_path, "bg.png"))
+
         img = img.resize((self.size, self.size), Image.ADAPTIVE)
         self.image = ImageTk.PhotoImage(img)
 

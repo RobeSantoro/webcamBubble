@@ -124,14 +124,19 @@ class WebCamBubbleApp(CTk):
 
         deactivate_automatic_dpi_awareness()
 
-        # Set process DPI awareness
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)
-        # Create a tkinter window
-        root = tkinter.Tk()
-        # Get the reported DPI from the window's HWND
-        dpi = ctypes.windll.user32.GetDpiForWindow(root.winfo_id())
-        # Destroy the window
-        root.destroy()
+        # Check if the OS is Windows 10 or MacOS
+        if os.name == "nt":
+            # Set process DPI awareness
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            # Create a tkinter window
+            root = tkinter.Tk()
+            # Get the reported DPI from the window's HWND
+            dpi = ctypes.windll.user32.GetDpiForWindow(root.winfo_id())
+            # Destroy the window
+            root.destroy()
+        elif os.name == "posix":
+            # Get the reported DPI from the window's HWND
+            dpi = 96
 
         self.scale = tkinter.IntVar(self, value=dpi/96)
 
@@ -142,14 +147,24 @@ class WebCamBubbleApp(CTk):
         self.overrideredirect(1)
         self.attributes("-topmost", 1)
 
-        # Set the transparent color to black
-        self.attributes("-transparentcolor", "black")
+        if os.name == "nt":
+            # Set the window to be transparent
+            self.wm_attributes("-transparentcolor", "black")
+        elif os.name == "posix":
+            # Set the window to be transparent
+            self.wm_attributes("-transparent", "true")
 
         self.geometry(
             f"{self.size.get()+self.margin.get()}x{self.size.get()+self.margin.get()}")
 
-        self.obs64_path = tkinter.StringVar(self,
-                                    value="C:/Program Files/obs-studio/bin/64bit/obs64.exe")
+        # OBS executable path
+
+        if os.name == "nt":
+            self.obs64_path = tkinter.StringVar(self,
+                                                value="C:/Program Files/obs-studio/bin/64bit/obs64.exe")
+        elif os.name == "posix":
+            self.obs64_path = tkinter.StringVar(self,
+                                                value="/Applications/OBS.app/Contents/MacOS/OBS")
 
         # Load images
         image_path = os.path.join(os.path.dirname(
@@ -329,45 +344,57 @@ class WebCamBubbleApp(CTk):
 
         if self.is_recording:
             self.is_recording = False
-            print("Stop recording")
-
-            self.record_button.configure(fg_color="#14375e")
-            self.record_button.configure(text="REC")
-
-            # Get the directory of the python script
-            script_dir = os.path.dirname(os.path.realpath(__file__))
-
-            # Use OBS Command to stop recording
-            path = os.path.join(script_dir, "OBSCommand")
-
-            cmd = f'{path}\\OBSCommand.exe /stoprecording && taskkill /f /im obs64.exe'
-
-            print()
-            print(cmd)
-            print()
-
-            # Create a new thread to stop recording
-            thread = threading.Thread(target=os.system, args=(cmd,))
-            thread.start()
-
-        else:
-            self.is_recording = True
-            print("Start recording")
-
-            self.record_button.configure(
-                fg_color="#ff2100",
-                hover_color="#b20000")
-            self.record_button.configure(text="●")
 
             # Change the working directory to the OBS directory
             os.chdir(os.path.dirname(self.obs64_path.get()))
 
             # Create the OBS Command
-            cmd = f'"{self.obs64_path.get()}" --startrecording --minimize-to-tray --multi'
+            cmd = f'"{self.obs64_path.get()}" --stoprecording'
+            print("Stop recording")
+            print(cmd)
+
+            # Create a new thread to stop recording
+            thread = threading.Thread(target=os.system, args=(cmd,))
+            thread.start()
+
+            self.record_button.configure(fg_color="#14375e")
+            self.record_button.configure(text="REC")
+
+            # # Get the directory of the python script
+            # script_dir = os.path.dirname(os.path.realpath(__file__))
+
+            # # Use OBS Command to stop recording
+            # path = os.path.join(script_dir, "OBSCommand")
+
+            # cmd = f'{path}\\OBSCommand.exe /stoprecording && taskkill /f /im obs64.exe'
+
+            # print()
+            # print(cmd)
+            # print()
+
+            # # Create a new thread to stop recording
+            # thread = threading.Thread(target=os.system, args=(cmd,))
+            # thread.start()
+
+        else:
+            self.is_recording = True
+
+            # Change the working directory to the OBS directory
+            os.chdir(os.path.dirname(self.obs64_path.get()))
+
+            # Create the OBS Command
+            cmd = f'"{self.obs64_path.get()}" --startrecording --minimize-to-tray'
+            print("Start recording")
+            print(cmd)
 
             # Create a new thread to run OBS
             thread = threading.Thread(target=os.system, args=(cmd,))
             thread.start()
+
+            self.record_button.configure(
+                fg_color="#ff2100",
+                hover_color="#b20000")
+            self.record_button.configure(text="●")
 
 
 if __name__ == "__main__":

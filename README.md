@@ -17,7 +17,7 @@ The application is crafted using Python libraries like Tkinter, OpenCV, and the 
 
 1. **Webcam Display:** The application fetches your webcam feed and displays it within a neat circular bubble on your desktop screen. It adjusts dynamically to the size and margins of your screen layout and stays on top of all other windows for easy access.
 
-2. **Draggable Window:** The window which holds the webcam feed can be dragged around your screen area to position it according to your preference.
+2. **Draggable Window:** The window that holds the webcam feed can be dragged around your screen area to position it according to your preference.
 
 ## Usage
 
