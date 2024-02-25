@@ -109,6 +109,7 @@ class SettingsWindow(CTkToplevel):
         if obs_path is not None and obs_path != "":
             parent.obs64_path.set(obs_path)
 
+        return
 
 class WebCamBubbleApp(CTk):
 

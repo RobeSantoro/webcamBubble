@@ -18,13 +18,13 @@ def center_faces(img, faces):
         x, y, w, h = faces[0]
         cx, cy = x + w // 2, y + h // 2
         width, height = img.shape[:2]
-        delta_x = (width - w) // 2
-        delta_y = (height - h) // 2
+        # delta_x = (width - w) // 2
+        # delta_y = (height - h) // 2
     else:
         return img
 
     result = cv2.copyMakeBorder(
-        img, delta_y, delta_y, delta_x, delta_x, cv2.BORDER_CONSTANT, value=0)
+        img[cy-15: cy+h+15, cx-10:cx+w+10], 16, 16, 16, 16, cv2.BORDER_CONSTANT)
     return result
 
 
